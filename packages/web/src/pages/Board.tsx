@@ -36,6 +36,7 @@ import {
   EyeIcon,
   EyeSlashIcon,
   MagnifyingGlassIcon,
+  PencilSquareIcon,
   PlusIcon,
   Squares2X2Icon,
   TrashIcon,
@@ -249,6 +250,11 @@ export function Board({ projectId }: BoardProps) {
   const closeEpicForm = () => {
     setEpicFormOpen(false);
     setEditingEpic(undefined);
+  };
+
+  const openEditEpic = (epic: Epic) => {
+    setEditingEpic(epic);
+    setEpicFormOpen(true);
   };
 
   // Cleanup handlers
@@ -506,6 +512,16 @@ export function Board({ projectId }: BoardProps) {
                           />
                         </label>
                       </div>
+                      <button
+                        class="btn btn-ghost btn-xs text-base-content/40 hover:text-base-content"
+                        title="Edit epic"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditEpic(epic);
+                        }}
+                      >
+                        <PencilSquareIcon className="h-4 w-4" />
+                      </button>
                       <button
                         class="btn btn-ghost btn-xs text-error/40 hover:text-error"
                         title="Delete epic"
