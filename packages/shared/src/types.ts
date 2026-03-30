@@ -130,15 +130,16 @@ export type Store = {
 };
 
 // Status columns for the Kanban board
-export type Status = 'planning' | 'todo' | 'in_progress' | 'done';
+export type Status = 'planning' | 'todo' | 'in_progress' | 'pr_review' | 'done';
 
-export const STATUSES: Status[] = ['planning', 'todo', 'in_progress', 'done'];
+export const STATUSES: Status[] = ['planning', 'todo', 'in_progress', 'pr_review', 'done'];
 
 // Status display names and colors
 export const STATUS_CONFIG: Record<Status, { label: string; color: string }> = {
   planning: { label: 'Planning', color: '#a855f7' },
   todo: { label: 'To Do', color: '#6b7280' },
   in_progress: { label: 'In Progress', color: '#3b82f6' },
+  pr_review: { label: 'PR Review', color: '#f97316' },
   done: { label: 'Done', color: '#22c55e' },
 };
 
