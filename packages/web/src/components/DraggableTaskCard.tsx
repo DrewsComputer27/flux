@@ -85,6 +85,7 @@ export function DraggableTaskCard({
             style={{ backgroundColor: epicColor }}
           />
           <span class="font-medium text-sm truncate flex-1">{task.title}</span>
+          <span class="text-xs font-mono text-base-content/30 flex-shrink-0" title="Task ID">{task.id}</span>
           {task.blocked && (
             <span class="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium flex-shrink-0">
               Blocked
@@ -138,18 +139,21 @@ export function DraggableTaskCard({
       aria-roledescription={attributes['aria-roledescription']}
       aria-describedby={attributes['aria-describedby']}
     >
-      {/* Epic Label */}
+      {/* Epic Label + Task ID */}
       <div class="flex items-center gap-1.5 mb-2">
         <span
           class="w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: epicColor }}
         />
         <span class="text-xs text-base-content/50 font-medium">{epicTitle}</span>
-        {task.blocked && (
-          <span class="ml-auto text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
-            Blocked
-          </span>
-        )}
+        <div class="ml-auto flex items-center gap-1.5">
+          <span class="text-xs font-mono text-base-content/30" title="Task ID">{task.id}</span>
+          {task.blocked && (
+            <span class="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
+              Blocked
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Title */}
