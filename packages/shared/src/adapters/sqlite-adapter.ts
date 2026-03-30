@@ -61,16 +61,23 @@ export function createSqliteAdapter(filePath: string): StorageAdapter {
         const current = readFromDb() as StoreWithWebhooks;
         const currentData = _data as StoreWithWebhooks;
 
-        // Merge changes: preserve any data added by other processes.
-        // This prevents lost updates by merging rather than overwriting.
+        // tasks/epics/projects/blobs: write directly from in-memory state (_data), which
+        // is authoritative. Using mergeById here would resurrect deleted items — DB still
+        // contains the deleted record, mergeById seeds from DB first, so deleted items
+        // survive the merge. Direct assignment means deletions in _data are final.
+        //
+        // webhooks/webhook_deliveries/api_keys: use mergeById because multiple processes
+        // (e.g. webhook delivery handlers) may write these concurrently. We want to
+        // preserve records added by other processes, not clobber them.
+        //
         // IMPORTANT: must include all StoreWithWebhooks fields here — if a field is
         // omitted, JSON.stringify will silently drop it and it will be lost on the next
         // server restart. This was the root cause of the webhook persistence bug.
         const merged: StoreWithWebhooks = {
-          projects: mergeById(current.projects, currentData.projects),
-          epics: mergeById(current.epics, currentData.epics),
-          tasks: mergeById(current.tasks, currentData.tasks),
-          blobs: mergeById(current.blobs || [], currentData.blobs || []),
+          projects: currentData.projects,
+          epics: currentData.epics,
+          tasks: currentData.tasks,
+          blobs: currentData.blobs || [],
           webhooks: mergeById(current.webhooks || [], currentData.webhooks || []),
           webhook_deliveries: mergeById(current.webhook_deliveries || [], currentData.webhook_deliveries || []),
           api_keys: mergeById(current.api_keys || [], currentData.api_keys || []),
