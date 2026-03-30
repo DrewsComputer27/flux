@@ -1,7 +1,7 @@
 import { Database } from 'bun:sqlite';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname } from 'path';
-import type { Store } from '../types.js';
+import type { Store, StoreWithWebhooks } from '../types.js';
 import type { StorageAdapter } from '../store.js';
 
 const defaultData: Store = {
@@ -58,17 +58,27 @@ export function createSqliteAdapter(filePath: string): StorageAdapter {
       // Use transaction to ensure atomic read-modify-write
       db.transaction(() => {
         // Re-read current state inside transaction
-        const current = readFromDb();
-        
-        // Merge changes: preserve any data added by other processes
-        // This prevents lost updates by merging rather than overwriting
-        const merged: Store = {
-          projects: mergeById(current.projects, _data.projects),
-          epics: mergeById(current.epics, _data.epics),
-          tasks: mergeById(current.tasks, _data.tasks),
-          blobs: mergeById(current.blobs || [], _data.blobs || []),
+        const current = readFromDb() as StoreWithWebhooks;
+        const currentData = _data as StoreWithWebhooks;
+
+        // Merge changes: preserve any data added by other processes.
+        // This prevents lost updates by merging rather than overwriting.
+        // IMPORTANT: must include all StoreWithWebhooks fields here — if a field is
+        // omitted, JSON.stringify will silently drop it and it will be lost on the next
+        // server restart. This was the root cause of the webhook persistence bug.
+        const merged: StoreWithWebhooks = {
+          projects: mergeById(current.projects, currentData.projects),
+          epics: mergeById(current.epics, currentData.epics),
+          tasks: mergeById(current.tasks, currentData.tasks),
+          blobs: mergeById(current.blobs || [], currentData.blobs || []),
+          webhooks: mergeById(current.webhooks || [], currentData.webhooks || []),
+          webhook_deliveries: mergeById(current.webhook_deliveries || [], currentData.webhook_deliveries || []),
+          api_keys: mergeById(current.api_keys || [], currentData.api_keys || []),
+          // cli_auth_requests use `token` (not `id`) so mergeById cannot be used.
+          // These are short-lived (5-minute expiry) so we keep the in-memory version.
+          cli_auth_requests: currentData.cli_auth_requests || [],
         };
-        
+
         const serialized = JSON.stringify(merged);
         const row = selectStmt.get();
         if (row) {
@@ -76,7 +86,7 @@ export function createSqliteAdapter(filePath: string): StorageAdapter {
         } else {
           insertStmt.run(serialized);
         }
-        
+
         // Update in-memory state to match what we wrote
         _data = merged;
       })();
