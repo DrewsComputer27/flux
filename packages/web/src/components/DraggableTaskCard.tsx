@@ -1,7 +1,11 @@
-import { ArrowDownIcon, CheckCircleIcon, PaperClipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import { ArrowDownIcon, CheckCircleIcon, PaperClipIcon, ShieldCheckIcon, TrashIcon, UserCircleIcon } from '@heroicons/react/24/outline'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
+import { useState, useRef, useEffect } from 'preact/hooks'
 import type { TaskWithBlocked } from '../stores'
+import { updateTask } from '../stores'
+import type { Agent } from '@flux/shared'
+import { AGENTS, AGENT_CONFIG } from '@flux/shared'
 
 interface DraggableTaskCardProps {
   task: TaskWithBlocked
@@ -9,6 +13,8 @@ interface DraggableTaskCardProps {
   epicTitle?: string
   taskNumber?: number
   onClick?: () => void
+  onDelete?: () => void
+  onRefresh?: () => void
   condensed?: boolean
 }
 
@@ -18,6 +24,8 @@ export function DraggableTaskCard({
   epicTitle = 'Unassigned',
   taskNumber,
   onClick,
+  onDelete,
+  onRefresh,
   condensed = false,
 }: DraggableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -30,10 +38,97 @@ export function DraggableTaskCard({
     opacity: isDragging ? 0.5 : 1,
   }
 
+  const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
+  const agentDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close the agent dropdown when clicking outside it
+  useEffect(() => {
+    if (!agentDropdownOpen) return
+    const handleClickOutside = (e: MouseEvent) => {
+      if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
+        setAgentDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [agentDropdownOpen])
+
   const handleClick = () => {
     if (!isDragging && onClick) {
       onClick()
     }
+  }
+
+  const handleAgentChange = async (e: Event, newAgent: Agent | null) => {
+    e.stopPropagation()
+    setAgentDropdownOpen(false)
+    await updateTask(task.id, { agent: newAgent ?? undefined })
+    if (onRefresh) onRefresh()
+  }
+
+  const renderAgentBadge = () => {
+    const agent = task.agent
+    if (!agent) {
+      return (
+        <div class="relative" ref={agentDropdownRef}>
+          <button
+            class="flex items-center gap-0.5 text-base-content/30 hover:text-base-content/60 transition-colors text-xs"
+            title="Assign agent"
+            onClick={(e) => { e.stopPropagation(); setAgentDropdownOpen(!agentDropdownOpen) }}
+          >
+            <UserCircleIcon className="h-3.5 w-3.5" />
+          </button>
+          {agentDropdownOpen && (
+            <div class="absolute z-50 top-5 left-0 bg-base-100 border border-base-300 rounded-lg shadow-lg py-1 min-w-[100px]">
+              {AGENTS.map((a: Agent) => (
+                <button
+                  key={a}
+                  class="flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-base-200 text-left"
+                  onClick={(e) => handleAgentChange(e, a)}
+                >
+                  <span class="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: AGENT_CONFIG[a].color }} />
+                  {AGENT_CONFIG[a].label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+    const config = AGENT_CONFIG[agent]
+    return (
+      <div class="relative" ref={agentDropdownRef}>
+        <button
+          class="badge badge-xs font-medium border-0 text-white flex-shrink-0"
+          style={{ backgroundColor: config.color }}
+          title={`Agent: ${config.label} — click to change`}
+          onClick={(e) => { e.stopPropagation(); setAgentDropdownOpen(!agentDropdownOpen) }}
+        >
+          {config.label}
+        </button>
+        {agentDropdownOpen && (
+          <div class="absolute z-50 top-5 left-0 bg-base-100 border border-base-300 rounded-lg shadow-lg py-1 min-w-[110px]">
+            <button
+              class="flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-base-200 text-left text-base-content/50"
+              onClick={(e) => handleAgentChange(e, null)}
+            >
+              <span class="w-2 h-2 rounded-full bg-base-300 flex-shrink-0" />
+              None
+            </button>
+            {AGENTS.map((a: Agent) => (
+              <button
+                key={a}
+                class={`flex items-center gap-2 w-full px-3 py-1.5 text-xs hover:bg-base-200 text-left ${a === agent ? 'font-semibold' : ''}`}
+                onClick={(e) => handleAgentChange(e, a)}
+              >
+                <span class="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: AGENT_CONFIG[a].color }} />
+                {AGENT_CONFIG[a].label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   // Shared indicator badges for acceptance criteria and guardrails
@@ -83,6 +178,8 @@ export function DraggableTaskCard({
             style={{ backgroundColor: epicColor }}
           />
           <span class="font-medium text-sm truncate flex-1">{task.title}</span>
+          <span class="text-xs font-mono text-base-content/30 flex-shrink-0" title="Task ID">{task.id}</span>
+          {renderAgentBadge()}
           {task.blocked && (
             <span class="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium flex-shrink-0">
               Blocked
@@ -106,6 +203,15 @@ export function DraggableTaskCard({
           {task.status === 'done' && (
             <progress class="progress progress-success w-8 flex-shrink-0" value={100} max={100} />
           )}
+          {onDelete && (
+            <button
+              class="btn btn-ghost btn-xs text-error/40 hover:text-error flex-shrink-0"
+              title="Delete task"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
     )
@@ -127,18 +233,22 @@ export function DraggableTaskCard({
       aria-roledescription={attributes['aria-roledescription']}
       aria-describedby={attributes['aria-describedby']}
     >
-      {/* Epic Label */}
+      {/* Epic Label + Task ID */}
       <div class="flex items-center gap-1.5 mb-2">
         <span
           class="w-2 h-2 rounded-full flex-shrink-0"
           style={{ backgroundColor: epicColor }}
         />
         <span class="text-xs text-base-content/50 font-medium">{epicTitle}</span>
-        {task.blocked && (
-          <span class="ml-auto text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
-            Blocked
-          </span>
-        )}
+        <div class="ml-auto flex items-center gap-1.5">
+          {renderAgentBadge()}
+          <span class="text-xs font-mono text-base-content/30" title="Task ID">{task.id}</span>
+          {task.blocked && (
+            <span class="text-xs bg-warning/20 text-warning px-1.5 py-0.5 rounded font-medium">
+              Blocked
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Title */}
@@ -190,10 +300,21 @@ export function DraggableTaskCard({
           {renderMetaIndicators()}
         </div>
 
-        {/* Task Number */}
-        {taskNumber && (
-          <span class="text-xs text-base-content/40">#{taskNumber}</span>
-        )}
+        {/* Task Number + Delete */}
+        <div class="flex items-center gap-1">
+          {taskNumber && (
+            <span class="text-xs text-base-content/40">#{taskNumber}</span>
+          )}
+          {onDelete && (
+            <button
+              class="btn btn-ghost btn-xs text-error/40 hover:text-error"
+              title="Delete task"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

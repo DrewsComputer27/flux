@@ -16,8 +16,8 @@ import {
   getBlobContentUrl,
   type TaskWithBlocked,
 } from "../stores";
-import type { Task, Epic, Status, TaskComment, Guardrail, Blob as FluxBlob } from "@flux/shared";
-import { STATUSES, STATUS_CONFIG } from "@flux/shared";
+import type { Task, Epic, Status, TaskComment, Guardrail, Blob as FluxBlob, Agent } from "@flux/shared";
+import { STATUSES, STATUS_CONFIG, AGENTS, AGENT_CONFIG } from "@flux/shared";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -63,6 +63,7 @@ export function TaskForm({
   const [newGuardrailText, setNewGuardrailText] = useState("");
   const [blobs, setBlobs] = useState<FluxBlob[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [agent, setAgent] = useState<Agent | undefined>(undefined);
 
   const isEdit = !!task;
 
@@ -100,6 +101,7 @@ export function TaskForm({
       setBlockedReason(task.blocked_reason || "");
       setAcceptanceCriteria(task.acceptance_criteria ? [...task.acceptance_criteria] : []);
       setGuardrails(task.guardrails ? [...task.guardrails] : []);
+      setAgent(task.agent ?? undefined);
       const blobsData = await getBlobs(task.id);
       setBlobs(blobsData);
     } else {
@@ -112,6 +114,7 @@ export function TaskForm({
       setAcceptanceCriteria([]);
       setGuardrails([]);
       setBlobs([]);
+      setAgent(undefined);
     }
   };
 
@@ -130,6 +133,7 @@ export function TaskForm({
           blocked_reason: blockedReason.trim() || undefined,
           acceptance_criteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : undefined,
           guardrails: guardrails.length > 0 ? guardrails : undefined,
+          agent: agent ?? undefined,
         });
       } else {
         const newTask = await createTask(
@@ -297,6 +301,34 @@ export function TaskForm({
                   {STATUSES.map((s) => (
                     <option key={s} value={s}>
                       {STATUS_CONFIG[s].label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {isEdit && (
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text">Assigned Agent</span>
+                  {agent && (
+                    <span class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[agent].color }}>
+                      {AGENT_CONFIG[agent].label}
+                    </span>
+                  )}
+                </label>
+                <select
+                  class="select select-bordered w-full"
+                  value={agent || ""}
+                  onChange={(e) => {
+                    const val = (e.target as HTMLSelectElement).value;
+                    setAgent(val ? (val as Agent) : undefined);
+                  }}
+                >
+                  <option value="">No agent assigned</option>
+                  {AGENTS.map((a) => (
+                    <option key={a} value={a}>
+                      {AGENT_CONFIG[a].label}
                     </option>
                   ))}
                 </select>
