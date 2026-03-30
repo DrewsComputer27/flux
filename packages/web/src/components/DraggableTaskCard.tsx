@@ -1,4 +1,4 @@
-import { ArrowDownIcon, CheckCircleIcon, PaperClipIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import { ArrowDownIcon, CheckCircleIcon, PaperClipIcon, ShieldCheckIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useDraggable } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { TaskWithBlocked } from '../stores'
@@ -9,6 +9,7 @@ interface DraggableTaskCardProps {
   epicTitle?: string
   taskNumber?: number
   onClick?: () => void
+  onDelete?: () => void
   condensed?: boolean
 }
 
@@ -18,6 +19,7 @@ export function DraggableTaskCard({
   epicTitle = 'Unassigned',
   taskNumber,
   onClick,
+  onDelete,
   condensed = false,
 }: DraggableTaskCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -106,6 +108,15 @@ export function DraggableTaskCard({
           {task.status === 'done' && (
             <progress class="progress progress-success w-8 flex-shrink-0" value={100} max={100} />
           )}
+          {onDelete && (
+            <button
+              class="btn btn-ghost btn-xs text-error/40 hover:text-error flex-shrink-0"
+              title="Delete task"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
     )
@@ -190,10 +201,21 @@ export function DraggableTaskCard({
           {renderMetaIndicators()}
         </div>
 
-        {/* Task Number */}
-        {taskNumber && (
-          <span class="text-xs text-base-content/40">#{taskNumber}</span>
-        )}
+        {/* Task Number + Delete */}
+        <div class="flex items-center gap-1">
+          {taskNumber && (
+            <span class="text-xs text-base-content/40">#{taskNumber}</span>
+          )}
+          {onDelete && (
+            <button
+              class="btn btn-ghost btn-xs text-error/40 hover:text-error"
+              title="Delete task"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            >
+              <TrashIcon className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   )

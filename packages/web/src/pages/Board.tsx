@@ -14,6 +14,8 @@ import {
   getEpics,
   updateEpic,
   updateTask,
+  deleteTask,
+  deleteEpic,
   cleanupProject,
   type TaskWithBlocked,
 } from "../stores";
@@ -36,6 +38,7 @@ import {
   MagnifyingGlassIcon,
   PlusIcon,
   Squares2X2Icon,
+  TrashIcon,
   ViewColumnsIcon,
 } from "@heroicons/react/24/outline";
 
@@ -212,6 +215,18 @@ export function Board({ projectId }: BoardProps) {
     if (updated) {
       setEpics((prev) => prev.map((item) => (item.id === epic.id ? updated : item)));
     }
+  };
+
+  const handleDeleteTask = async (taskId: string, taskTitle: string) => {
+    if (!window.confirm(`Delete task "${taskTitle}"? This cannot be undone.`)) return;
+    await deleteTask(taskId);
+    await refreshData();
+  };
+
+  const handleDeleteEpic = async (epicId: string, epicTitle: string) => {
+    if (!window.confirm(`Delete epic "${epicTitle}"? Tasks will be moved to Unassigned.`)) return;
+    await deleteEpic(epicId);
+    await refreshData();
   };
 
   const openEditTask = (task: TaskWithBlocked) => {
@@ -491,6 +506,16 @@ export function Board({ projectId }: BoardProps) {
                           />
                         </label>
                       </div>
+                      <button
+                        class="btn btn-ghost btn-xs text-error/40 hover:text-error"
+                        title="Delete epic"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteEpic(epic.id, epic.title);
+                        }}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
 
@@ -591,6 +616,7 @@ export function Board({ projectId }: BoardProps) {
                                       epicTitle={epic.title}
                                       taskNumber={taskIndex + 1}
                                       onClick={() => openEditTask(task)}
+                                      onDelete={() => handleDeleteTask(task.id, task.title)}
                                       condensed={viewMode === "condensed"}
                                     />
                                   )
@@ -717,6 +743,7 @@ export function Board({ projectId }: BoardProps) {
                                   epicTitle="Unassigned"
                                   taskNumber={taskIndex + 1}
                                   onClick={() => openEditTask(task)}
+                                  onDelete={() => handleDeleteTask(task.id, task.title)}
                                   condensed={viewMode === "condensed"}
                                 />
                               )
