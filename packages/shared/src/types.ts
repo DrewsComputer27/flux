@@ -1,13 +1,14 @@
 // Agent options for tasks
-export type Agent = 'claude' | 'codex' | 'gemini' | 'other';
+export type Agent = 'kirk' | 'todd' | 'mark' | 'max' | 'arch';
 
-export const AGENTS: Agent[] = ['claude', 'codex', 'gemini', 'other'];
+export const AGENTS: Agent[] = ['kirk', 'todd', 'mark', 'max', 'arch'];
 
-export const AGENT_CONFIG: Record<Agent, { label: string }> = {
-  claude: { label: 'Claude' },
-  codex: { label: 'Codex' },
-  gemini: { label: 'Gemini' },
-  other: { label: 'Other' },
+export const AGENT_CONFIG: Record<Agent, { label: string; color: string }> = {
+  kirk: { label: 'Kirk', color: '#6366f1' },
+  todd: { label: 'Todd', color: '#f59e0b' },
+  mark: { label: 'Mark', color: '#10b981' },
+  max: { label: 'Max', color: '#ef4444' },
+  arch: { label: 'Arch', color: '#8b5cf6' },
 };
 
 // Priority levels: P0 = urgent, P1 = normal, P2 = low

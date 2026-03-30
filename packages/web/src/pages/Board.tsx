@@ -617,6 +617,7 @@ export function Board({ projectId }: BoardProps) {
                                       taskNumber={taskIndex + 1}
                                       onClick={() => openEditTask(task)}
                                       onDelete={() => handleDeleteTask(task.id, task.title)}
+                                      onRefresh={refreshData}
                                       condensed={viewMode === "condensed"}
                                     />
                                   )
@@ -744,6 +745,7 @@ export function Board({ projectId }: BoardProps) {
                                   taskNumber={taskIndex + 1}
                                   onClick={() => openEditTask(task)}
                                   onDelete={() => handleDeleteTask(task.id, task.title)}
+                                      onRefresh={refreshData}
                                   condensed={viewMode === "condensed"}
                                 />
                               )
