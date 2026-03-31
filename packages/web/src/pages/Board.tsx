@@ -564,7 +564,7 @@ export function Board({ projectId }: BoardProps) {
                           {/* Column Headers */}
                           <div
                             class={`grid ${
-                              planningCollapsed ? "grid-cols-3" : "grid-cols-4"
+                              planningCollapsed ? "grid-cols-5" : "grid-cols-6"
                             } gap-4 mb-3`}
                           >
                             {STATUSES.filter(
@@ -610,7 +610,7 @@ export function Board({ projectId }: BoardProps) {
                           {/* Columns */}
                           <div
                             class={`grid ${
-                              planningCollapsed ? "grid-cols-3" : "grid-cols-4"
+                              planningCollapsed ? "grid-cols-5" : "grid-cols-6"
                             } gap-4`}
                           >
                             {STATUSES.filter(
@@ -696,7 +696,7 @@ export function Board({ projectId }: BoardProps) {
                     <div class="flex-1">
                       <div
                         class={`grid ${
-                          planningCollapsed ? "grid-cols-3" : "grid-cols-4"
+                          planningCollapsed ? "grid-cols-5" : "grid-cols-6"
                         } gap-4 mb-3`}
                       >
                         {STATUSES.filter(
@@ -738,7 +738,7 @@ export function Board({ projectId }: BoardProps) {
 
                       <div
                         class={`grid ${
-                          planningCollapsed ? "grid-cols-3" : "grid-cols-4"
+                          planningCollapsed ? "grid-cols-5" : "grid-cols-6"
                         } gap-4`}
                       >
                         {STATUSES.filter(
