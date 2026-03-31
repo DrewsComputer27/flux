@@ -28,7 +28,7 @@ export function DroppableColumn({ id, children, isEmpty = false }: DroppableColu
           <span class="text-base-content/40 text-sm">No tasks</span>
         </div>
       ) : (
-        <div class="space-y-3">
+        <div class="space-y-3 max-h-[60vh] overflow-y-auto column-scroll pr-1">
           {children}
         </div>
       )}
