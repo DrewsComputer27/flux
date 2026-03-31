@@ -272,6 +272,14 @@ export function TaskForm({
         <form onSubmit={handleSubmit}>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
+            {isEdit && task && (
+              <div class="mb-4 flex items-center gap-2">
+                <span class="text-xs text-base-content/40 font-mono bg-base-200 px-2 py-1 rounded select-all cursor-text" title="Task ID">
+                  {task.id}
+                </span>
+              </div>
+            )}
+
             <div class="form-control mb-4">
               <label class="label">
                 <span class="label-text">Title *</span>
