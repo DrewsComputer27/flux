@@ -305,6 +305,7 @@ app.post('/api/projects/:projectId/epics', async (c) => {
   const epic = createEpic(projectId, body.title, body.notes, body.auto);
   // Trigger webhook
   triggerWebhooks('epic.created', { epic }, projectId);
+  notifyDataChange();
   return c.json(epic, 201);
 });
 
@@ -320,6 +321,7 @@ app.patch('/api/epics/:id', async (c) => {
   const epic = updateEpic(epicId, body);
   if (!epic) return c.json({ error: 'Epic not found' }, 404);
   triggerWebhooks('epic.updated', { epic, previous }, epic.project_id);
+  notifyDataChange();
   return c.json(epic);
 });
 
@@ -334,6 +336,7 @@ app.delete('/api/epics/:id', (c) => {
   const success = deleteEpic(epicId);
   if (!success) return c.json({ error: 'Epic not found' }, 404);
   triggerWebhooks('epic.deleted', { epic }, epic.project_id);
+  notifyDataChange();
   return c.json({ success: true });
 });
 
@@ -375,6 +378,7 @@ app.post('/api/tasks/:id/comments', async (c) => {
   const agentName = typeof body?.agent_name === 'string' ? body.agent_name : undefined;
   const comment = addTaskComment(taskId, commentBody, author, agentName);
   if (!comment) return c.json({ error: 'Task not found' }, 404);
+  notifyDataChange();
   return c.json(comment, 201);
 });
 
@@ -389,6 +393,7 @@ app.delete('/api/tasks/:id/comments/:commentId', (c) => {
   const commentId = c.req.param('commentId');
   const deleted = deleteTaskComment(taskId, commentId);
   if (!deleted) return c.json({ error: 'Comment not found' }, 404);
+  notifyDataChange();
   return c.json({ success: true });
 });
 
@@ -409,6 +414,7 @@ app.post('/api/projects/:projectId/tasks', async (c) => {
   });
   // Trigger webhook
   triggerWebhooks('task.created', { task }, projectId);
+  notifyDataChange();
   return c.json(task, 201);
 });
 
@@ -449,6 +455,7 @@ app.patch('/api/tasks/:id', async (c) => {
     triggerWebhooks(event, { task, previous }, task.project_id);
   }
 
+  notifyDataChange();
   return c.json({ ...task, blocked: isTaskBlocked(task.id) });
 });
 
@@ -463,6 +470,7 @@ app.delete('/api/tasks/:id', (c) => {
   const success = deleteTask(taskId);
   if (!success) return c.json({ error: 'Task not found' }, 404);
   triggerWebhooks('task.deleted', { task }, task.project_id);
+  notifyDataChange();
   return c.json({ success: true });
 });
 
@@ -483,6 +491,7 @@ app.post('/api/projects/:projectId/cleanup', async (c) => {
   }
   const body = await c.req.json();
   const result = cleanupProject(projectId, body.archiveTasks ?? true, body.archiveEpics ?? true);
+  notifyDataChange();
   return c.json({ success: true, ...result });
 });
 
