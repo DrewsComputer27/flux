@@ -4,11 +4,11 @@ export type Agent = 'kirk' | 'todd' | 'mark' | 'max' | 'arch';
 export const AGENTS: Agent[] = ['kirk', 'todd', 'mark', 'max', 'arch'];
 
 export const AGENT_CONFIG: Record<Agent, { label: string; color: string }> = {
-  kirk: { label: 'Kirk', color: '#6366f1' },
-  todd: { label: 'Todd', color: '#f59e0b' },
-  mark: { label: 'Mark', color: '#10b981' },
-  max: { label: 'Max', color: '#ef4444' },
-  arch: { label: 'Arch', color: '#8b5cf6' },
+  kirk: { label: 'Kirk', color: '#0d9488' },  // teal — distinct from all status/priority/epic colors
+  todd: { label: 'Todd', color: '#b45309' },  // dark amber/brown — distinct from #f59e0b qa/P1
+  mark: { label: 'Mark', color: '#1d4ed8' },  // dark navy — distinct from #3b82f6 in_progress blue
+  max: { label: 'Max', color: '#db2777' },    // rose/magenta — distinct from #ef4444 P0/epic red
+  arch: { label: 'Arch', color: '#475569' },  // slate — distinct from #6b7280 todo/P2 gray
 };
 
 // Priority levels: P0 = urgent, P1 = normal, P2 = low
