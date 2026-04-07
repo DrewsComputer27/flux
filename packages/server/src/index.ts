@@ -407,6 +407,7 @@ app.post('/api/projects/:projectId/tasks', async (c) => {
   const validation = validateTaskFields(body);
   if (validation.error) return c.json({ error: validation.error }, 400);
   const task = createTask(projectId, body.title, body.epic_id, {
+    description: body.description,
     priority: body.priority,
     depends_on: body.depends_on,
     acceptance_criteria: body.acceptance_criteria,
