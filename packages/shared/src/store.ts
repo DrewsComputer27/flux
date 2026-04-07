@@ -323,7 +323,7 @@ export function createTask(
   projectId: string,
   title: string,
   epicId?: string,
-  options?: { priority?: Priority; depends_on?: string[]; acceptance_criteria?: string[]; guardrails?: Guardrail[] }
+  options?: { description?: string; priority?: Priority; depends_on?: string[]; acceptance_criteria?: string[]; guardrails?: Guardrail[] }
 ): Task {
   const now = new Date().toISOString();
   const id = generateId();
@@ -337,6 +337,7 @@ export function createTask(
   const task: Task = {
     id,
     title,
+    description: options?.description,
     status: 'planning',
     depends_on,
     comments: [],

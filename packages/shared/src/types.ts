@@ -43,6 +43,7 @@ export type Guardrail = {
 export type Task = {
   id: string;
   title: string;
+  description?: string; // Optional longer description / context
   status: string; // e.g. "todo" | "in_progress" | "done"
   depends_on: string[];
   comments?: TaskComment[];
