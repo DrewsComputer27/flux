@@ -410,11 +410,12 @@ export function addTaskComment(
 ): TaskComment | undefined {
   const task = db.data.tasks.find(t => t.id === taskId);
   if (!task) return undefined;
+  const normalizedAgent = agentName ? agentName.toLowerCase() : undefined;
   const comment: TaskComment = {
     id: generateId(),
     body,
     author,
-    ...(agentName ? { agent_name: agentName } : {}),
+    ...(normalizedAgent ? { agent_name: normalizedAgent } : {}),
     created_at: new Date().toISOString(),
   };
   if (!task.comments) task.comments = [];

@@ -854,7 +854,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
       const author = args?.author === 'user' ? 'user' : 'mcp';
       const agentName = args?.agent_name as string | undefined;
-      const comment = await addTaskComment(args?.task_id as string, body, author, agentName);
+      const normalizedAgent = agentName?.toLowerCase();
+      const comment = await addTaskComment(args?.task_id as string, body, author, normalizedAgent);
       if (!comment) {
         return { content: [{ type: 'text', text: 'Task not found' }], isError: true };
       }

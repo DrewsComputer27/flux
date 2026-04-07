@@ -196,7 +196,7 @@ export function DraggableTaskCard({
             <>
               <progress class="progress progress-warning w-8 flex-shrink-0" />
               {task.workers && task.workers.length > 0 && task.workers.map(name => (
-                <span key={name} class="badge badge-xs flex-shrink-0 text-white border-0" style={{ backgroundColor: AGENT_CONFIG[name as Agent]?.color || undefined }}>{name}</span>
+                <span key={name} class="badge badge-xs flex-shrink-0 text-white border-0" style={{ backgroundColor: AGENT_CONFIG[name as Agent]?.color || '#6b7280' }}>{name}</span>
               ))}
             </>
           )}
@@ -281,7 +281,7 @@ export function DraggableTaskCard({
               <progress class="progress progress-warning w-10" />
               <span class="badge badge-ghost badge-warning badge-xs">Agent working</span>
               {task.workers && task.workers.map(name => (
-                <span key={name} class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[name as Agent]?.color || undefined }}>{name}</span>
+                <span key={name} class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[name as Agent]?.color || '#6b7280' }}>{name}</span>
               ))}
             </>
           )}

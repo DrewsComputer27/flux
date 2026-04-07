@@ -646,7 +646,7 @@ export function TaskForm({
                                 {comment.author === "mcp" ? "MCP" : "User"}
                               </span>
                               {comment.agent_name && (
-                                <span class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[comment.agent_name as Agent]?.color }}>
+                                <span class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[comment.agent_name as Agent]?.color || '#6b7280' }}>
                                   {comment.agent_name}
                                 </span>
                               )}

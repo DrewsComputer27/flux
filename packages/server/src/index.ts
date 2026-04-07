@@ -376,7 +376,8 @@ app.post('/api/tasks/:id/comments', async (c) => {
   if (!commentBody) return c.json({ error: 'Comment body required' }, 400);
   const author = body?.author === 'mcp' ? 'mcp' : 'user';
   const agentName = typeof body?.agent_name === 'string' ? body.agent_name : undefined;
-  const comment = addTaskComment(taskId, commentBody, author, agentName);
+  const normalizedAgent = agentName?.toLowerCase();
+  const comment = addTaskComment(taskId, commentBody, author, normalizedAgent);
   if (!comment) return c.json({ error: 'Task not found' }, 404);
   notifyDataChange();
   return c.json(comment, 201);
