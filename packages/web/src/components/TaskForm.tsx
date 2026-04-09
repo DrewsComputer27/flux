@@ -1,4 +1,5 @@
 import { useState, useEffect } from "preact/hooks";
+import { marked } from "marked";
 import { PaperClipIcon } from "@heroicons/react/24/outline";
 import { ConfirmModal } from "./ConfirmModal";
 import { Modal } from "./Modal";
@@ -64,6 +65,7 @@ export function TaskForm({
   const [blobs, setBlobs] = useState<FluxBlob[]>([]);
   const [uploading, setUploading] = useState(false);
   const [agent, setAgent] = useState<Agent | undefined>(undefined);
+  const [description, setDescription] = useState("");
 
   const isEdit = !!task;
 
@@ -102,6 +104,7 @@ export function TaskForm({
       setAcceptanceCriteria(task.acceptance_criteria ? [...task.acceptance_criteria] : []);
       setGuardrails(task.guardrails ? [...task.guardrails] : []);
       setAgent(task.agent ?? undefined);
+      setDescription(task.description || "");
       const blobsData = await getBlobs(task.id);
       setBlobs(blobsData);
     } else {
@@ -115,6 +118,7 @@ export function TaskForm({
       setGuardrails([]);
       setBlobs([]);
       setAgent(undefined);
+      setDescription("");
     }
   };
 
@@ -134,6 +138,7 @@ export function TaskForm({
           acceptance_criteria: acceptanceCriteria.length > 0 ? acceptanceCriteria : undefined,
           guardrails: guardrails.length > 0 ? guardrails : undefined,
           agent: agent ?? undefined,
+          description: description.trim() || undefined,
         });
       } else {
         const newTask = await createTask(
@@ -145,6 +150,7 @@ export function TaskForm({
         if (dependsOn.length > 0) updates.depends_on = dependsOn;
         if (acceptanceCriteria.length > 0) updates.acceptance_criteria = acceptanceCriteria;
         if (guardrails.length > 0) updates.guardrails = guardrails;
+        if (description.trim()) updates.description = description.trim();
         if (Object.keys(updates).length > 0) {
           await updateTask(newTask.id, updates);
         }
@@ -291,6 +297,29 @@ export function TaskForm({
                 value={title}
                 onInput={(e) => setTitle((e.target as HTMLInputElement).value)}
                 required
+              />
+            </div>
+
+            <div class="form-control mb-4">
+              <label class="label">
+                <span class="label-text">Description</span>
+              </label>
+              {isEdit ? (
+                description ? (
+                  <div
+                    class="prose prose-sm max-w-none border border-base-300 rounded-lg p-3 bg-base-100"
+                    dangerouslySetInnerHTML={{ __html: marked.parse(description) as string }}
+                  />
+                ) : (
+                  <p class="text-sm text-base-content/40 italic">No description</p>
+                )
+              ) : null}
+              <textarea
+                placeholder="Add a description..."
+                class={`textarea textarea-bordered w-full ${isEdit ? "mt-2" : ""}`}
+                value={description}
+                onInput={(e) => setDescription((e.target as HTMLTextAreaElement).value)}
+                rows={3}
               />
             </div>
 
