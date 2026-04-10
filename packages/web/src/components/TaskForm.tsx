@@ -1,6 +1,6 @@
 import { useState, useEffect } from "preact/hooks";
 import { marked } from "marked";
-import { PaperClipIcon } from "@heroicons/react/24/outline";
+import { PaperClipIcon, LinkIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { ConfirmModal } from "./ConfirmModal";
 import { Modal } from "./Modal";
 import {
@@ -33,6 +33,7 @@ interface TaskFormProps {
   task?: Task; // If provided, edit mode; otherwise create mode
   projectId: string;
   defaultEpicId?: string; // Pre-select epic when creating new task
+  onNavigateToTask?: (taskId: string) => void;
 }
 
 export function TaskForm({
@@ -42,6 +43,7 @@ export function TaskForm({
   task,
   projectId,
   defaultEpicId,
+  onNavigateToTask,
 }: TaskFormProps) {
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<string>("todo");
@@ -283,6 +285,47 @@ export function TaskForm({
                 <span class="text-xs text-base-content/40 font-mono bg-base-200 px-2 py-1 rounded select-all cursor-text" title="Task ID">
                   {task.id}
                 </span>
+              </div>
+            )}
+
+            {task && dependsOn.length > 0 && (
+              <div class="mb-6 border border-warning/30 bg-warning/5 rounded-lg p-3">
+                <div class="text-sm font-semibold mb-2 flex items-center gap-1.5 text-base-content/70">
+                  <LinkIcon className="h-4 w-4" />
+                  Blocked By
+                </div>
+                {dependsOn.map((depId) => {
+                  const depTask = availableTasks.find((t) => t.id === depId);
+                  if (!depTask) {
+                    return (
+                      <div key={depId} class="text-xs text-base-content/50 px-2 py-1">
+                        {depId} (not found)
+                      </div>
+                    );
+                  }
+                  const isDone = depTask.status === "done";
+                  return (
+                    <div
+                      key={depId}
+                      class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-base-200 cursor-pointer transition-colors"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onNavigateToTask?.(depId);
+                      }}
+                    >
+                      {isDone ? (
+                        <CheckCircleIcon className="h-4 w-4 text-success flex-shrink-0" />
+                      ) : (
+                        <ExclamationTriangleIcon className="h-4 w-4 text-warning flex-shrink-0" />
+                      )}
+                      <span class="text-sm flex-1 truncate">{depTask.title}</span>
+                      <span class={`badge badge-xs ${isDone ? "badge-success" : "badge-warning"}`}>
+                        {STATUS_CONFIG[depTask.status as Status]?.label || depTask.status}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

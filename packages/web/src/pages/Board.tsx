@@ -235,6 +235,13 @@ export function Board({ projectId }: BoardProps) {
     setTaskFormOpen(true);
   };
 
+  const navigateToTask = (taskId: string) => {
+    const target = tasks.find((t) => t.id === taskId);
+    if (target) {
+      openEditTask(target);
+    }
+  };
+
   const closeTaskForm = () => {
     setTaskFormOpen(false);
     setEditingTask(undefined);
@@ -785,6 +792,7 @@ export function Board({ projectId }: BoardProps) {
           task={editingTask}
           projectId={projectId!}
           defaultEpicId={defaultEpicId}
+          onNavigateToTask={navigateToTask}
         />
         <EpicForm
           isOpen={epicFormOpen}
