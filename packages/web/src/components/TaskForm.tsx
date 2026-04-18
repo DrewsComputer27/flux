@@ -1,4 +1,4 @@
-import { useState, useEffect } from "preact/hooks";
+import { useState, useEffect, useRef } from "preact/hooks";
 import { marked } from "marked";
 import { PaperClipIcon, LinkIcon, CheckCircleIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline";
 import { ConfirmModal } from "./ConfirmModal";
@@ -71,6 +71,12 @@ export function TaskForm({
 
   const isEdit = !!task;
 
+  // Generation counter to prevent stale async loadFormData calls from
+  // overwriting state when the user quickly switches between tasks.
+  const loadGenRef = useRef(0);
+
+  // Depend on task?.id (stable value) instead of the task object reference,
+  // which changes on every SSE refresh even when the same task is selected.
   useEffect(() => {
     if (isOpen) {
       setDeleteConfirmOpen(false);
@@ -80,34 +86,48 @@ export function TaskForm({
       setDeleteConfirmOpen(false);
       setDeleteCommentId(null);
     }
-  }, [isOpen, task, projectId, defaultEpicId]);
+  }, [isOpen, task?.id, projectId, defaultEpicId]);
 
   const loadFormData = async () => {
+    const gen = ++loadGenRef.current;
     const [epicsData, tasksData] = await Promise.all([
       getEpics(projectId),
       getTasks(projectId),
     ]);
+    // If a newer loadFormData call started while we were awaiting, bail out —
+    // our data is stale and the newer call will set state correctly.
+    if (gen !== loadGenRef.current) return;
+
     setEpics(epicsData);
+
+    // Use the fresh task data from the API response instead of the closure's
+    // task prop, which may be stale if an SSE refresh replaced the tasks array
+    // between the click and the API response completing.
+    const freshTask = task
+      ? tasksData.find((t) => t.id === task.id) ?? task
+      : undefined;
+
     setAvailableTasks(
-      task ? tasksData.filter((t) => t.id !== task.id) : tasksData
+      freshTask ? tasksData.filter((t) => t.id !== freshTask.id) : tasksData
     );
 
     setDependencyFilter("");
     setNewCriterion("");
     setNewGuardrailNumber("");
     setNewGuardrailText("");
-    if (task) {
-      setTitle(task.title);
-      setStatus(task.status);
-      setEpicId(task.epic_id || "");
-      setDependsOn([...task.depends_on]);
-      setComments(task.comments ? [...task.comments] : []);
-      setBlockedReason(task.blocked_reason || "");
-      setAcceptanceCriteria(task.acceptance_criteria ? [...task.acceptance_criteria] : []);
-      setGuardrails(task.guardrails ? [...task.guardrails] : []);
-      setAgent(task.agent ?? undefined);
-      setDescription(task.description || "");
-      const blobsData = await getBlobs(task.id);
+    if (freshTask) {
+      setTitle(freshTask.title);
+      setStatus(freshTask.status);
+      setEpicId(freshTask.epic_id || "");
+      setDependsOn([...freshTask.depends_on]);
+      setComments(freshTask.comments ? [...freshTask.comments] : []);
+      setBlockedReason(freshTask.blocked_reason || "");
+      setAcceptanceCriteria(freshTask.acceptance_criteria ? [...freshTask.acceptance_criteria] : []);
+      setGuardrails(freshTask.guardrails ? [...freshTask.guardrails] : []);
+      setAgent(freshTask.agent ?? undefined);
+      setDescription(freshTask.description || "");
+      const blobsData = await getBlobs(freshTask.id);
+      if (gen !== loadGenRef.current) return; // check again after second await
       setBlobs(blobsData);
     } else {
       setTitle("");
