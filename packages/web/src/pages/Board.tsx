@@ -1,8 +1,9 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { route, RoutableProps } from "preact-router";
 import {
   DndContext,
   DragEndEvent,
+  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -99,6 +100,9 @@ export function Board({ projectId }: BoardProps) {
     })
   );
 
+  // Track whether a drag is in progress so SSE refreshes don't interrupt it
+  const isDraggingRef = useRef(false);
+
   useEffect(() => {
     if (!projectId) {
       route("/");
@@ -116,6 +120,9 @@ export function Board({ projectId }: BoardProps) {
     let isMounted = true;
 
     const scheduleRefresh = () => {
+      // Don't refresh while a drag is in progress — it would cause a re-render
+      // that nullifies dnd-kit's `over` property, snapping the task back
+      if (isDraggingRef.current) return;
       if (refreshTimeout) {
         window.clearTimeout(refreshTimeout);
       }
@@ -182,9 +189,16 @@ export function Board({ projectId }: BoardProps) {
     setEpics(epicsData);
   };
 
+  // Handle drag start — block SSE refreshes while dragging
+  const handleDragStart = (_event: DragStartEvent) => {
+    isDraggingRef.current = true;
+  };
+
   // Handle drag end
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    // Clear dragging flag before any early returns so SSE refreshes resume
+    isDraggingRef.current = false;
     if (!over) return;
 
     const taskId = active.id as string;
@@ -319,6 +333,7 @@ export function Board({ projectId }: BoardProps) {
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <div class="min-h-screen bg-base-200">

@@ -40,6 +40,19 @@ export function DraggableTaskCard({
 
   const [agentDropdownOpen, setAgentDropdownOpen] = useState(false)
   const agentDropdownRef = useRef<HTMLDivElement>(null)
+  const wasDraggingRef = useRef(false)
+
+  // Track drag state to prevent click from firing after a drag ends.
+  // isDragging resets to false before the browser click event fires,
+  // so we keep a ref true for 200ms after drag ends to catch it.
+  useEffect(() => {
+    if (isDragging) {
+      wasDraggingRef.current = true
+    } else if (wasDraggingRef.current) {
+      const timer = setTimeout(() => { wasDraggingRef.current = false }, 200)
+      return () => clearTimeout(timer)
+    }
+  }, [isDragging])
 
   // Close the agent dropdown when clicking outside it
   useEffect(() => {
@@ -54,7 +67,7 @@ export function DraggableTaskCard({
   }, [agentDropdownOpen])
 
   const handleClick = () => {
-    if (!isDragging && onClick) {
+    if (!isDragging && !wasDraggingRef.current && onClick) {
       onClick()
     }
   }
