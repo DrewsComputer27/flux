@@ -237,8 +237,9 @@ export async function getWebhookDeliveries(webhookId: string, limit: number = 50
 
 export interface AuthStatus {
   authenticated: boolean;
-  keyType: 'server' | 'project' | 'env' | 'anonymous';
+  keyType: 'server' | 'project' | 'env' | 'forward_auth' | 'anonymous';
   projectIds?: string[];
+  username?: string;
 }
 
 export interface ApiKeyInfo {

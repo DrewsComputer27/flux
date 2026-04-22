@@ -8,9 +8,10 @@ const getEnvKey = () => process.env.FLUX_API_KEY;
 
 // Auth context attached to requests
 export type AuthContext = {
-  keyType: 'server' | 'project' | 'env' | 'anonymous';
+  keyType: 'server' | 'project' | 'env' | 'forward_auth' | 'anonymous';
   projectIds?: string[];  // For project-scoped keys
   apiKey?: ApiKey;        // The validated key record
+  username?: string;      // For forward_auth: username from Authentik header
 };
 
 // Timing-safe string comparison
@@ -46,8 +47,13 @@ export const authMiddleware = createMiddleware<{ Variables: { auth: AuthContext 
   const authHeader = c.req.header('Authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  // No token provided
+  // No token provided — check for Authentik forward_auth headers
   if (!token) {
+    const authentikUsername = c.req.header('X-Authentik-Username');
+    if (authentikUsername) {
+      c.set('auth', { keyType: 'forward_auth', username: authentikUsername });
+      return next();
+    }
     // GET/HEAD allowed for public projects (handled in route)
     if (c.req.method === 'GET' || c.req.method === 'HEAD') {
       c.set('auth', { keyType: 'anonymous' });
@@ -85,7 +91,7 @@ export const authMiddleware = createMiddleware<{ Variables: { auth: AuthContext 
  */
 export function canWriteProject(auth: AuthContext, projectId: string): boolean {
   if (!isAuthRequired()) return true;
-  if (auth.keyType === 'env' || auth.keyType === 'server') return true;
+  if (auth.keyType === 'env' || auth.keyType === 'server' || auth.keyType === 'forward_auth') return true;
   if (auth.keyType === 'project' && auth.projectIds) {
     return auth.projectIds.includes(projectId);
   }
@@ -97,8 +103,8 @@ export function canWriteProject(auth: AuthContext, projectId: string): boolean {
  * Public projects can be read by anyone, private requires key access
  */
 export function canReadProject(auth: AuthContext, projectId: string): boolean {
-  // Server/env keys can read anything
-  if (auth.keyType === 'env' || auth.keyType === 'server') return true;
+  // Server/env/forward_auth can read anything
+  if (auth.keyType === 'env' || auth.keyType === 'server' || auth.keyType === 'forward_auth') return true;
 
   // Project keys can read their projects
   if (auth.keyType === 'project' && auth.projectIds) {
@@ -118,8 +124,8 @@ export function canReadProject(auth: AuthContext, projectId: string): boolean {
 export function filterProjects(auth: AuthContext): ReturnType<typeof getProjects> {
   const projects = getProjects();
 
-  // Server/env keys see everything
-  if (auth.keyType === 'env' || auth.keyType === 'server') return projects;
+  // Server/env/forward_auth keys see everything
+  if (auth.keyType === 'env' || auth.keyType === 'server' || auth.keyType === 'forward_auth') return projects;
 
   // Project keys see their projects + public projects
   if (auth.keyType === 'project' && auth.projectIds) {

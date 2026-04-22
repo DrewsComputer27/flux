@@ -713,6 +713,7 @@ app.get('/api/auth/status', (c) => {
     authenticated: auth.keyType !== 'anonymous',
     keyType: auth.keyType,
     projectIds: auth.projectIds,
+    ...(auth.keyType === 'forward_auth' ? { username: auth.username } : {}),
   });
 });
 
