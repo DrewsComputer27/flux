@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks'
 import { route, RoutableProps } from 'preact-router'
 import { completeCliAuth, getAuthStatus, getProjects, type ProjectWithStats } from '../stores/api'
-import { setToken, clearToken } from '../stores/auth'
+import { setToken, clearToken, getAuthMode } from '../stores/auth'
 
 interface AuthProps extends RoutableProps {
   token?: string
@@ -18,6 +18,7 @@ export function Auth({ token: urlToken }: AuthProps) {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [authenticated, setAuthenticated] = useState(false)
+  const [forwardAuthUser, setForwardAuthUser] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Clear token from URL to prevent leakage via history/referrer
@@ -34,8 +35,13 @@ export function Auth({ token: urlToken }: AuthProps) {
 
   const checkAuth = async () => {
     try {
-      const status = await getAuthStatus()
+      // Prefer cached result from app-level initAuth()
+      const cached = getAuthMode()
+      const status = cached ?? await getAuthStatus()
       setAuthenticated(status.authenticated)
+      if (status.keyType === 'forward_auth') {
+        setForwardAuthUser(status.username ?? 'unknown')
+      }
     } catch {
       setAuthenticated(false)
     } finally {
@@ -100,6 +106,28 @@ export function Auth({ token: urlToken }: AuthProps) {
     return (
       <div class="min-h-screen bg-base-200 flex items-center justify-center">
         <span class="loading loading-spinner loading-lg"></span>
+      </div>
+    )
+  }
+
+  // Forward auth — authenticated via Authentik; show identity, no API key prompt
+  if (forwardAuthUser) {
+    return (
+      <div class="min-h-screen bg-base-200 flex items-center justify-center">
+        <div class="card w-96 bg-base-100 shadow-xl">
+          <div class="card-body text-center">
+            <div class="text-6xl mb-4">&#10003;</div>
+            <h2 class="card-title text-2xl justify-center mb-2">Authenticated</h2>
+            <p class="opacity-70 mb-4">
+              Signed in as <strong>{forwardAuthUser}</strong> via Authentik.
+            </p>
+            <div class="card-actions justify-center">
+              <button class="btn btn-primary" onClick={() => route('/')}>
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

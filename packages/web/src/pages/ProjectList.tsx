@@ -13,6 +13,7 @@ import {
 } from "../stores";
 import { ConfirmModal, Modal, ThemeToggle } from "../components";
 import { WebhooksPanel } from "../components/WebhooksPanel";
+import { getAuthMode } from "../stores/auth";
 
 export function ProjectList(_props: RoutableProps) {
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
@@ -158,23 +159,32 @@ export function ProjectList(_props: RoutableProps) {
     return "bg-base-content/30";
   };
 
-  const settingsSections = [
+  const isForwardAuth = getAuthMode()?.keyType === 'forward_auth';
+
+  const allSettingsSections = [
     {
       id: "configuration",
       title: "Configuration",
       subtitle: "API endpoints and realtime status",
+      adminOnly: false,
     },
     {
       id: "webhooks",
       title: "Webhooks",
       subtitle: "Outbound events and delivery history",
+      adminOnly: true,
     },
     {
       id: "reset",
       title: "Reset",
       subtitle: "Wipe data and start fresh",
+      adminOnly: true,
     },
   ] as const;
+
+  const settingsSections = isForwardAuth
+    ? allSettingsSections.filter((s) => !s.adminOnly)
+    : allSettingsSections;
 
   if (loading) {
     return (
@@ -349,13 +359,13 @@ export function ProjectList(_props: RoutableProps) {
               </div>
             )}
 
-            {settingsSection === "webhooks" && (
+            {settingsSection === "webhooks" && !isForwardAuth && (
               <div class="space-y-4">
                 <WebhooksPanel />
               </div>
             )}
 
-            {settingsSection === "reset" && (
+            {settingsSection === "reset" && !isForwardAuth && (
               <div class="space-y-4">
                 <div>
                   <h4 class="text-lg font-semibold">Reset Database</h4>
