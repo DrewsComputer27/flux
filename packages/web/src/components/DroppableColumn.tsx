@@ -15,7 +15,7 @@ export function DroppableColumn({ id, children, isEmpty = false }: DroppableColu
   return (
     <div
       ref={setNodeRef}
-      class={`rounded-xl p-3 min-h-32 transition-all ${
+      class={`rounded-xl p-3 min-h-32 min-w-0 transition-all ${
         isOver
           ? 'bg-primary/10 ring-2 ring-primary/50'
           : isEmpty

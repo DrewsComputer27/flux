@@ -335,6 +335,12 @@ export function Board({ projectId }: BoardProps) {
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      autoScroll={{
+        // Only let dnd-kit auto-scroll containers that cannot scroll horizontally.
+        // The columns (overflow-y-auto) qualify; the page/document does not when the
+        // board overflows the viewport, so dragging can no longer pan the board sideways.
+        canScroll: (element: Element) => element.scrollWidth <= element.clientWidth,
+      }}
     >
       <div class="min-h-screen bg-base-200">
         {/* Header */}
@@ -600,7 +606,7 @@ export function Board({ projectId }: BoardProps) {
                               return (
                                 <div
                                   key={status}
-                                  class="flex items-center gap-2"
+                                  class="flex items-center gap-2 min-w-0"
                                 >
                                   <span
                                     class="w-2 h-2 rounded-full"
@@ -730,7 +736,7 @@ export function Board({ projectId }: BoardProps) {
                             undefined
                           ).length;
                           return (
-                            <div key={status} class="flex items-center gap-2">
+                            <div key={status} class="flex items-center gap-2 min-w-0">
                               <span
                                 class="w-2 h-2 rounded-full"
                                 style={{ backgroundColor: config.color }}
