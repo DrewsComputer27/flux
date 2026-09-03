@@ -321,6 +321,16 @@ export function Board({ projectId }: BoardProps) {
   // Get total task count
   const totalTaskCount = tasks.filter(filterTask).length;
 
+  // Explicit column track widths (shared by header + columns grids so they stay
+  // aligned) with a floor width per column so columns stay usable on narrow
+  // viewports instead of shrinking to nothing; the surrounding scroll container
+  // lets the board overflow horizontally once the floor is hit.
+  const columnGridStyle = {
+    gridTemplateColumns: `repeat(${
+      planningCollapsed ? 5 : 6
+    }, minmax(260px, 1fr))`,
+  };
+
   if (loading) {
     return (
       <div class="min-h-screen bg-base-200 flex items-center justify-center">
@@ -344,7 +354,7 @@ export function Board({ projectId }: BoardProps) {
     >
       <div class="min-h-screen bg-base-200">
         {/* Header */}
-        <div class="navbar bg-base-100 shadow-lg mb-4">
+        <div class="navbar bg-base-100 shadow-lg mb-4 flex-wrap gap-y-2">
           <div class="flex-1 flex items-center">
             <button class="btn btn-ghost btn-circle" onClick={() => route("/")}>
               <ArrowLeftIcon className="h-5 w-5" />
@@ -374,8 +384,8 @@ export function Board({ projectId }: BoardProps) {
         <div class="px-6 pb-0">
           {/* Filter Bar */}
           <div class="bg-base-100 rounded-xl p-4 shadow-sm mb-6">
-            <div class="flex items-center gap-4">
-              <div class="relative flex-1 max-w-sm">
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="relative flex-1 min-w-[12rem] sm:max-w-sm">
                 <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-base-content/40" />
                 <input
                   type="text"
@@ -588,12 +598,11 @@ export function Board({ projectId }: BoardProps) {
                         )}
 
                         {/* Main Columns Container */}
-                        <div class="flex-1">
+                        <div class="flex-1 min-w-0 overflow-x-auto column-scroll">
                           {/* Column Headers */}
                           <div
-                            class={`grid ${
-                              planningCollapsed ? "grid-cols-5" : "grid-cols-6"
-                            } gap-4 mb-3`}
+                            class="grid gap-4 mb-3"
+                            style={columnGridStyle}
                           >
                             {STATUSES.filter(
                               (s) => !planningCollapsed || s !== "planning"
@@ -637,9 +646,8 @@ export function Board({ projectId }: BoardProps) {
 
                           {/* Columns */}
                           <div
-                            class={`grid ${
-                              planningCollapsed ? "grid-cols-5" : "grid-cols-6"
-                            } gap-4`}
+                            class="grid gap-4"
+                            style={columnGridStyle}
                           >
                             {STATUSES.filter(
                               (s) => !planningCollapsed || s !== "planning"
@@ -721,11 +729,10 @@ export function Board({ projectId }: BoardProps) {
                     )}
 
                     {/* Main Columns Container */}
-                    <div class="flex-1">
+                    <div class="flex-1 min-w-0 overflow-x-auto column-scroll">
                       <div
-                        class={`grid ${
-                          planningCollapsed ? "grid-cols-5" : "grid-cols-6"
-                        } gap-4 mb-3`}
+                        class="grid gap-4 mb-3"
+                        style={columnGridStyle}
                       >
                         {STATUSES.filter(
                           (s) => !planningCollapsed || s !== "planning"
@@ -765,9 +772,8 @@ export function Board({ projectId }: BoardProps) {
                       </div>
 
                       <div
-                        class={`grid ${
-                          planningCollapsed ? "grid-cols-5" : "grid-cols-6"
-                        } gap-4`}
+                        class="grid gap-4"
+                        style={columnGridStyle}
                       >
                         {STATUSES.filter(
                           (s) => !planningCollapsed || s !== "planning"
