@@ -4,7 +4,8 @@ import {
   DndContext,
   DragEndEvent,
   DragStartEvent,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   closestCenter,
@@ -91,12 +92,15 @@ export function Board({ projectId }: BoardProps) {
     toggleEpicCollapse,
   } = useBoardPreferences(projectId ?? "");
 
-  // Configure sensors with activation constraint to allow clicks
+  // Mouse: 8px of movement starts a drag (clicks still open the card).
+  // Touch: a 250ms press starts a drag; an immediate swipe scrolls the column
+  // instead (cards use touch-action: manipulation, not none).
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
     })
   );
 

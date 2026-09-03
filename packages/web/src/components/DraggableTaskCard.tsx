@@ -174,7 +174,7 @@ export function DraggableTaskCard({
       <div
         ref={setNodeRef}
         style={style}
-        class={`bg-base-100 rounded-lg shadow-sm px-3 py-2 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing touch-none ${
+        class={`bg-base-100 rounded-lg shadow-sm px-3 py-2 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing touch-manipulation ${
           task.blocked ? 'ring-2 ring-warning/50' : ''
         }`}
         onClick={handleClick}
@@ -235,7 +235,7 @@ export function DraggableTaskCard({
     <div
       ref={setNodeRef}
       style={style}
-      class={`bg-base-100 rounded-lg shadow-sm p-4 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing touch-none ${
+      class={`bg-base-100 rounded-lg shadow-sm p-4 cursor-grab hover:shadow-md transition-shadow active:cursor-grabbing touch-manipulation ${
         task.blocked ? 'ring-2 ring-warning/50' : ''
       }`}
       onClick={handleClick}
