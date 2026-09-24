@@ -2,10 +2,13 @@ import { createMiddleware } from 'hono/factory';
 import { timingSafeEqual } from 'crypto';
 import { validateApiKey, hasApiKeys, getProject, getProjects } from '@flux/shared';
 import type { ApiKey, KeyScope } from '@flux/shared';
-import { isTrustedPeer } from './trusted-proxy';
+import { isTrustedPeer } from './trusted-proxy.js';
 
 // Read env var dynamically to support testing
 const getEnvKey = () => process.env.FLUX_API_KEY;
+
+// Authentik usernames allowed to manage keys/projects/webhooks via forward_auth. Empty = no admins.
+const ADMIN_USERS = new Set((process.env.FLUX_ADMIN_USERS ?? '').split(',').map(s => s.trim()).filter(Boolean));
 
 // Auth context attached to requests
 export type AuthContext = {
@@ -153,12 +156,20 @@ export function isAuthRequired(): boolean {
 }
 
 /**
+ * Check if the current auth context is a trusted Authentik admin
+ * (forward_auth, from a trusted proxy, username listed in FLUX_ADMIN_USERS)
+ */
+export function isAdminUser(auth: AuthContext): boolean {
+  return auth.keyType === 'forward_auth' && auth.trustedProxy === true && !!auth.username && ADMIN_USERS.has(auth.username);
+}
+
+/**
  * Check if auth context has server-level access
  * In dev mode (no auth configured), always returns true
  */
 export function hasServerAccess(auth: AuthContext): boolean {
   if (!isAuthRequired()) return true;
-  return auth.keyType === 'env' || auth.keyType === 'server';
+  return auth.keyType === 'env' || auth.keyType === 'server' || isAdminUser(auth);
 }
 
 /**

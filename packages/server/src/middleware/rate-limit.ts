@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory';
-import { isTrustedPeer, peerAddress } from './trusted-proxy';
+import { isTrustedPeer, peerAddress } from './trusted-proxy.js';
 
 type RateLimitConfig = {
   windowMs: number;  // Time window in ms
