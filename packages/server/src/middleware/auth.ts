@@ -2,6 +2,7 @@ import { createMiddleware } from 'hono/factory';
 import { timingSafeEqual } from 'crypto';
 import { validateApiKey, hasApiKeys, getProject, getProjects } from '@flux/shared';
 import type { ApiKey, KeyScope } from '@flux/shared';
+import { isTrustedPeer } from './trusted-proxy';
 
 // Read env var dynamically to support testing
 const getEnvKey = () => process.env.FLUX_API_KEY;
@@ -12,6 +13,7 @@ export type AuthContext = {
   projectIds?: string[];  // For project-scoped keys
   apiKey?: ApiKey;        // The validated key record
   username?: string;      // For forward_auth: username from Authentik header
+  trustedProxy?: boolean; // True when forward_auth headers came from a trusted proxy peer
 };
 
 // Timing-safe string comparison
@@ -44,16 +46,21 @@ export const authMiddleware = createMiddleware<{ Variables: { auth: AuthContext 
     return next();
   }
 
+  // Authentik forward_auth headers are only honoured from a trusted proxy peer
+  // (e.g. Caddy after forward_auth). A trusted proxy's identity wins over a
+  // Bearer token, since the token may be a stale/shared browser credential.
+  const trusted = await isTrustedPeer(c);
+  const authentikUsername = trusted ? c.req.header('X-Authentik-Username') : undefined;
+  if (authentikUsername) {
+    c.set('auth', { keyType: 'forward_auth', username: authentikUsername, trustedProxy: true });
+    return next();
+  }
+
   const authHeader = c.req.header('Authorization');
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
-  // No token provided — check for Authentik forward_auth headers
+  // No token provided and no trusted forward_auth identity
   if (!token) {
-    const authentikUsername = c.req.header('X-Authentik-Username');
-    if (authentikUsername) {
-      c.set('auth', { keyType: 'forward_auth', username: authentikUsername });
-      return next();
-    }
     // GET/HEAD allowed for public projects (handled in route)
     if (c.req.method === 'GET' || c.req.method === 'HEAD') {
       c.set('auth', { keyType: 'anonymous' });

@@ -60,6 +60,7 @@ import { createFilesystemBlobStorage, setBlobStorage, getBlobStorage } from '@fl
 import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
 import { authMiddleware, filterProjects, canReadProject, canWriteProject, requireServerAccess, type AuthContext } from './middleware/auth.js';
 import { rateLimit } from './middleware/rate-limit.js';
+import { trustedSet } from './middleware/trusted-proxy.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -377,7 +378,8 @@ app.post('/api/tasks/:id/comments', async (c) => {
   const author = body?.author === 'mcp' ? 'mcp' : 'user';
   const agentName = typeof body?.agent_name === 'string' ? body.agent_name : undefined;
   const normalizedAgent = agentName?.toLowerCase();
-  const comment = addTaskComment(taskId, commentBody, author, normalizedAgent);
+  const identity = auth.username ? `authentik:${auth.username}` : auth.apiKey ? `key:${auth.apiKey.id}` : undefined;
+  const comment = addTaskComment(taskId, commentBody, author, normalizedAgent, identity);
   if (!comment) return c.json({ error: 'Task not found' }, 404);
   notifyDataChange();
   return c.json(comment, 201);
@@ -732,6 +734,10 @@ app.get('/api/auth/keys', requireServerAccess, (c) => {
 
 // Create API key
 app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType !== 'forward_auth') {
+    return c.json({ error: 'API key management requires an Authentik session' }, 403);
+  }
   const body = await c.req.json();
   if (!body.name) {
     return c.json({ error: 'Name required' }, 400);
@@ -757,6 +763,10 @@ app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) =>
 
 // Delete API key
 app.delete('/api/auth/keys/:id', requireServerAccess, (c) => {
+  const auth = c.get('auth');
+  if (auth.keyType !== 'forward_auth') {
+    return c.json({ error: 'API key management requires an Authentik session' }, 403);
+  }
   const success = deleteApiKey(c.req.param('id'));
   if (!success) return c.json({ error: 'Key not found' }, 404);
   return c.json({ success: true });
@@ -847,6 +857,8 @@ if (existsSync(webDistPath)) {
 // Start server
 const port = parseInt(process.env.PORT || '3000');
 console.log(`Flux server running at http://localhost:${port}`);
+
+void trustedSet(true);
 
 serve({
   fetch: app.fetch,

@@ -1,4 +1,5 @@
 import { createMiddleware } from 'hono/factory';
+import { isTrustedPeer, peerAddress } from './trusted-proxy';
 
 type RateLimitConfig = {
   windowMs: number;  // Time window in ms
@@ -23,9 +24,12 @@ setInterval(() => {
  */
 export function rateLimit(config: RateLimitConfig) {
   return createMiddleware(async (c, next) => {
-    // Use IP as key (or X-Forwarded-For if behind proxy)
-    const ip = c.req.header('X-Forwarded-For')?.split(',')[0].trim() ||
-               c.req.header('X-Real-IP') ||
+    // Only honour X-Forwarded-For / X-Real-IP from a trusted proxy peer —
+    // otherwise any client could spoof these headers to evade rate limiting.
+    const trusted = await isTrustedPeer(c);
+    const ip = (trusted && (c.req.header('X-Forwarded-For')?.split(',')[0].trim() ||
+               c.req.header('X-Real-IP'))) ||
+               peerAddress(c) ||
                'unknown';
     const key = `${ip}:${c.req.path}`;
     const now = Date.now();
