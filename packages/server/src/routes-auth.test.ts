@@ -210,4 +210,24 @@ describe('comment identity + PATCH allow-list', () => {
     expect(afterTask.project_id).toBe(projectId);
     expect(afterTask.created_at).toBe(originalCreatedAt);
   });
+
+  it('i. derives workers from status + agent_name on PATCH, and clears them when status becomes done', async () => {
+    const startRes = await app.request(
+      `/api/tasks/${taskId}`,
+      json('PATCH', { status: 'in_progress', agent_name: 'mark' }, { Authorization: `Bearer ${ENV_KEY}` }),
+      untrusted
+    );
+    expect(startRes.status).toBe(200);
+    const startedTask = await startRes.json();
+    expect(startedTask.workers).toContain('mark');
+
+    const doneRes = await app.request(
+      `/api/tasks/${taskId}`,
+      json('PATCH', { status: 'done' }, { Authorization: `Bearer ${ENV_KEY}` }),
+      untrusted
+    );
+    expect(doneRes.status).toBe(200);
+    const doneTask = await doneRes.json();
+    expect(doneTask.workers).toEqual([]);
+  });
 });
