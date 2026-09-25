@@ -30,6 +30,8 @@ export type TaskComment = {
   author: CommentAuthor;
   agent_name?: string;
   created_at: string;
+  // server-set only: 'authentik:<username>' (trusted-proxy forward_auth) or 'key:<apiKey.id>' (stored key). Never from the request body.
+  identity?: string;
 };
 
 // Guardrail for agent loop integration (higher number = more critical)

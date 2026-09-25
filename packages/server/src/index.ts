@@ -58,8 +58,10 @@ import { findFluxDir, loadEnvLocal, readConfig, resolveDataPath } from '@flux/sh
 import { createAdapter } from '@flux/shared/adapters';
 import { createFilesystemBlobStorage, setBlobStorage, getBlobStorage } from '@flux/shared/blob-storage';
 import { handleWebhookEvent, testWebhookDelivery } from './webhook-service.js';
-import { authMiddleware, filterProjects, canReadProject, canWriteProject, requireServerAccess, type AuthContext } from './middleware/auth.js';
+import { authMiddleware, filterProjects, canReadProject, canWriteProject, requireServerAccess, isAdminUser, type AuthContext } from './middleware/auth.js';
 import { rateLimit } from './middleware/rate-limit.js';
+import { trustedSet } from './middleware/trusted-proxy.js';
+import { PATCHABLE_TASK_FIELDS } from './task-fields.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -377,7 +379,8 @@ app.post('/api/tasks/:id/comments', async (c) => {
   const author = body?.author === 'mcp' ? 'mcp' : 'user';
   const agentName = typeof body?.agent_name === 'string' ? body.agent_name : undefined;
   const normalizedAgent = agentName?.toLowerCase();
-  const comment = addTaskComment(taskId, commentBody, author, normalizedAgent);
+  const identity = auth.username ? `authentik:${auth.username}` : auth.apiKey ? `key:${auth.apiKey.id}` : undefined;
+  const comment = addTaskComment(taskId, commentBody, author, normalizedAgent, identity);
   if (!comment) return c.json({ error: 'Task not found' }, 404);
   notifyDataChange();
   return c.json(comment, 201);
@@ -431,26 +434,32 @@ app.patch('/api/tasks/:id', async (c) => {
   const body = await c.req.json();
   const validation = validateTaskFields(body);
   if (validation.error) return c.json({ error: validation.error }, 400);
-  // Agent team worker tracking
+  // Only persist allow-listed fields — the raw body must never reach updateTask
+  // directly (e.g. comments/id/created_at/project_id would allow identity forgery
+  // or record tampering).
+  const patch: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (PATCHABLE_TASK_FIELDS.has(key)) patch[key] = value;
+  }
+  // Agent team worker tracking — computed server-side, never taken from the body
   const agentName = typeof body.agent_name === 'string' ? body.agent_name : undefined;
-  if (body.status === 'in_progress' && agentName) {
+  if (patch.status === 'in_progress' && agentName) {
     const currentWorkers = previous.workers || [];
     if (!currentWorkers.includes(agentName)) {
-      body.workers = [...currentWorkers, agentName];
+      patch.workers = [...currentWorkers, agentName];
     }
-  } else if (body.status === 'done') {
-    body.workers = [];
+  } else if (patch.status === 'done') {
+    patch.workers = [];
   }
-  delete body.agent_name; // Don't persist agent_name on the task itself
-  const task = updateTask(taskId, body);
+  const task = updateTask(taskId, patch);
   if (!task) return c.json({ error: 'Task not found' }, 404);
 
   // Determine which webhook events to trigger
   const events: WebhookEventType[] = ['task.updated'];
-  if (body.status && previous.status !== body.status) {
+  if (patch.status && previous.status !== patch.status) {
     events.push('task.status_changed');
   }
-  if (body.archived === true && !previous.archived) {
+  if (patch.archived === true && !previous.archived) {
     events.push('task.archived');
   }
   for (const event of events) {
@@ -732,6 +741,10 @@ app.get('/api/auth/keys', requireServerAccess, (c) => {
 
 // Create API key
 app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) => {
+  const auth = c.get('auth');
+  if (!isAdminUser(auth)) {
+    return c.json({ error: 'API key management requires an Authentik admin session' }, 403);
+  }
   const body = await c.req.json();
   if (!body.name) {
     return c.json({ error: 'Name required' }, 400);
@@ -757,6 +770,10 @@ app.post('/api/auth/keys', requireServerAccess, keyCreateRateLimit, async (c) =>
 
 // Delete API key
 app.delete('/api/auth/keys/:id', requireServerAccess, (c) => {
+  const auth = c.get('auth');
+  if (!isAdminUser(auth)) {
+    return c.json({ error: 'API key management requires an Authentik admin session' }, 403);
+  }
   const success = deleteApiKey(c.req.param('id'));
   if (!success) return c.json({ error: 'Key not found' }, 404);
   return c.json({ success: true });
@@ -779,6 +796,10 @@ app.post('/api/auth/cli-poll', authRateLimit, async (c) => {
 
 // CLI auth flow: Complete from web
 app.post('/api/auth/cli-complete', requireServerAccess, async (c) => {
+  const auth = c.get('auth');
+  if (!isAdminUser(auth)) {
+    return c.json({ error: 'API key management requires an Authentik admin session' }, 403);
+  }
   const body = await c.req.json();
   if (!body.token || !body.name) {
     return c.json({ error: 'Token and name required' }, 400);
@@ -844,11 +865,17 @@ if (existsSync(webDistPath)) {
   });
 }
 
-// Start server
-const port = parseInt(process.env.PORT || '3000');
-console.log(`Flux server running at http://localhost:${port}`);
+export { app };
 
-serve({
-  fetch: app.fetch,
-  port,
-});
+// Start server
+if (process.env.FLUX_NO_LISTEN !== '1') {
+  const port = parseInt(process.env.PORT || '3000');
+  console.log(`Flux server running at http://localhost:${port}`);
+
+  void trustedSet(true);
+
+  serve({
+    fetch: app.fetch,
+    port,
+  });
+}

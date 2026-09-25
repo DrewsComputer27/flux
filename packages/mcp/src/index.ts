@@ -780,7 +780,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (args?.guardrails !== undefined) updates.guardrails = args.guardrails;
       // Agent team worker tracking
       const agentName = args?.agent_name as string | undefined;
-      if (args?.status === 'in_progress' && agentName) {
+      if (isServerMode()) {
+        // Server mode: the server computes `workers` from `status` + `agent_name`
+        // itself (workers is not in the PATCH allow-list and a client-sent value
+        // would be silently dropped), so send agent_name instead.
+        if (agentName) updates.agent_name = agentName;
+      } else if (args?.status === 'in_progress' && agentName) {
         const currentTask = await getTask(args?.task_id as string);
         const currentWorkers = currentTask?.workers || [];
         if (!currentWorkers.includes(agentName)) {
@@ -827,7 +832,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const statusUpdates: Record<string, unknown> = { status: args?.status as string };
       // Agent team worker tracking
       const agentName = args?.agent_name as string | undefined;
-      if (args?.status === 'in_progress' && agentName) {
+      if (isServerMode()) {
+        // Server mode: the server computes `workers` from `status` + `agent_name`
+        // itself (workers is not in the PATCH allow-list and a client-sent value
+        // would be silently dropped), so send agent_name instead.
+        if (agentName) statusUpdates.agent_name = agentName;
+      } else if (args?.status === 'in_progress' && agentName) {
         const currentTask = await getTask(args?.task_id as string);
         const currentWorkers = currentTask?.workers || [];
         if (!currentWorkers.includes(agentName)) {
