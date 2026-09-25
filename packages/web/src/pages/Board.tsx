@@ -22,7 +22,7 @@ import {
   type TaskWithBlocked,
 } from "../stores";
 import type { Epic } from "@flux/shared";
-import { STATUSES, STATUS_CONFIG, EPIC_COLORS } from "@flux/shared";
+import { STATUSES, STATUS_CONFIG, EPIC_COLORS, statusConfig } from "@flux/shared";
 import {
   TaskForm,
   EpicForm,
@@ -611,7 +611,7 @@ export function Board({ projectId }: BoardProps) {
                             {STATUSES.filter(
                               (s) => !planningCollapsed || s !== "planning"
                             ).map((status) => {
-                              const config = STATUS_CONFIG[status];
+                              const config = statusConfig(status);
                               const count = getColumnTasks(
                                 status,
                                 epic.id
@@ -741,7 +741,7 @@ export function Board({ projectId }: BoardProps) {
                         {STATUSES.filter(
                           (s) => !planningCollapsed || s !== "planning"
                         ).map((status) => {
-                          const config = STATUS_CONFIG[status];
+                          const config = statusConfig(status);
                           const count = getColumnTasks(
                             status,
                             undefined

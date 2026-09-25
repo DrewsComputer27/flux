@@ -1,7 +1,7 @@
 // Agent options for tasks
-export type Agent = 'kirk' | 'todd' | 'mark' | 'max' | 'arch';
+export type Agent = 'kirk' | 'todd' | 'mark' | 'max' | 'arch' | 'homey';
 
-export const AGENTS: Agent[] = ['kirk', 'todd', 'mark', 'max', 'arch'];
+export const AGENTS: Agent[] = ['kirk', 'todd', 'mark', 'max', 'arch', 'homey'];
 
 export const AGENT_CONFIG: Record<Agent, { label: string; color: string }> = {
   kirk: { label: 'Kirk', color: '#3b82f6' },  // blue
@@ -9,7 +9,19 @@ export const AGENT_CONFIG: Record<Agent, { label: string; color: string }> = {
   mark: { label: 'Mark', color: '#22c55e' },  // green
   max: { label: 'Max', color: '#ef4444' },    // red
   arch: { label: 'Arch', color: '#eab308' },  // yellow
+  homey: { label: 'Homey', color: '#a855f7' }, // purple
 };
+
+// Fallback for unknown/blank agent (e.g. legacy 'homey' before it was added, or '') so the
+// board never crashes on AGENT_CONFIG[agent].color for a value outside the Agent union.
+const UNKNOWN_AGENT_CONFIG = { label: 'unknown', color: '#6b7280' };
+
+export function agentConfig(name: string | undefined | null): { label: string; color: string } {
+  if (name && Object.prototype.hasOwnProperty.call(AGENT_CONFIG, name)) {
+    return AGENT_CONFIG[name as Agent];
+  }
+  return name ? { label: name, color: '#6b7280' } : UNKNOWN_AGENT_CONFIG;
+}
 
 // Priority levels: P0 = urgent, P1 = normal, P2 = low
 export type Priority = 0 | 1 | 2;
@@ -21,6 +33,19 @@ export const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; a
   1: { label: 'P1', color: '#f59e0b', ansi: '\x1b[33m' }, // yellow - normal
   2: { label: 'P2', color: '#6b7280', ansi: '\x1b[90m' }, // gray - low
 };
+
+// Some persisted data predates the strict Priority type (e.g. 'high'/'medium'/'low'/'urgent'
+// strings, or numeric 3). Map any of that to a valid PRIORITY_CONFIG entry so callers never
+// index PRIORITY_CONFIG with an out-of-range key.
+export function priorityConfig(p: unknown): { label: string; color: string; ansi: string } {
+  if (p === 0 || p === 'urgent' || p === 'high') return PRIORITY_CONFIG[0];
+  if (p === 2 || p === 'low' || p === 3) return PRIORITY_CONFIG[2];
+  if (p === 1 && Object.prototype.hasOwnProperty.call(PRIORITY_CONFIG, p)) return PRIORITY_CONFIG[1];
+  if (typeof p === 'number' && Object.prototype.hasOwnProperty.call(PRIORITY_CONFIG, p)) {
+    return PRIORITY_CONFIG[p as Priority];
+  }
+  return PRIORITY_CONFIG[1];
+}
 
 export type CommentAuthor = 'user' | 'mcp';
 
@@ -146,6 +171,16 @@ export const STATUS_CONFIG: Record<Status, { label: string; color: string }> = {
   pr_review: { label: 'PR Review', color: '#f97316' },
   done: { label: 'Done', color: '#22c55e' },
 };
+
+// Defensive lookup for STATUS_CONFIG. Today `status` is always drawn from the fixed STATUSES
+// array wherever this is called, but Task.status is typed as a plain string, so guard anyway
+// for consistency with agentConfig/priorityConfig.
+export function statusConfig(status: string): { label: string; color: string } {
+  if (Object.prototype.hasOwnProperty.call(STATUS_CONFIG, status)) {
+    return STATUS_CONFIG[status as Status];
+  }
+  return { label: status, color: '#6b7280' };
+}
 
 // Epic colors palette
 export const EPIC_COLORS = [
