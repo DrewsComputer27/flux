@@ -18,7 +18,7 @@ import {
   type TaskWithBlocked,
 } from "../stores";
 import type { Task, Epic, Status, TaskComment, Guardrail, Blob as FluxBlob, Agent } from "@flux/shared";
-import { STATUSES, STATUS_CONFIG, AGENTS, AGENT_CONFIG } from "@flux/shared";
+import { STATUSES, STATUS_CONFIG, AGENTS, AGENT_CONFIG, agentConfig } from "@flux/shared";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -412,8 +412,8 @@ export function TaskForm({
                 <label class="label">
                   <span class="label-text">Assigned Agent</span>
                   {agent && (
-                    <span class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[agent].color }}>
-                      {AGENT_CONFIG[agent].label}
+                    <span class="badge badge-xs text-white border-0" style={{ backgroundColor: agentConfig(agent).color }}>
+                      {agentConfig(agent).label}
                     </span>
                   )}
                 </label>
@@ -738,7 +738,7 @@ export function TaskForm({
                                 {comment.author === "mcp" ? "MCP" : "User"}
                               </span>
                               {comment.agent_name && (
-                                <span class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[comment.agent_name as Agent]?.color || '#6b7280' }}>
+                                <span class="badge badge-xs text-white border-0" style={{ backgroundColor: agentConfig(comment.agent_name).color }}>
                                   {comment.agent_name}
                                 </span>
                               )}

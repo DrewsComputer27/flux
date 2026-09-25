@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'preact/hooks'
 import type { TaskWithBlocked } from '../stores'
 import { updateTask } from '../stores'
 import type { Agent } from '@flux/shared'
-import { AGENTS, AGENT_CONFIG } from '@flux/shared'
+import { AGENTS, AGENT_CONFIG, agentConfig } from '@flux/shared'
 
 interface DraggableTaskCardProps {
   task: TaskWithBlocked
@@ -108,7 +108,7 @@ export function DraggableTaskCard({
         </div>
       )
     }
-    const config = AGENT_CONFIG[agent]
+    const config = agentConfig(agent)
     return (
       <div class="relative" ref={agentDropdownRef}>
         <button
@@ -209,7 +209,7 @@ export function DraggableTaskCard({
             <>
               <progress class="progress progress-warning w-8 flex-shrink-0" />
               {task.workers && task.workers.length > 0 && task.workers.map(name => (
-                <span key={name} class="badge badge-xs flex-shrink-0 text-white border-0" style={{ backgroundColor: AGENT_CONFIG[name as Agent]?.color || '#6b7280' }}>{name}</span>
+                <span key={name} class="badge badge-xs flex-shrink-0 text-white border-0" style={{ backgroundColor: agentConfig(name).color }}>{name}</span>
               ))}
             </>
           )}
@@ -294,7 +294,7 @@ export function DraggableTaskCard({
               <progress class="progress progress-warning w-10" />
               <span class="badge badge-ghost badge-warning badge-xs">Agent working</span>
               {task.workers && task.workers.map(name => (
-                <span key={name} class="badge badge-xs text-white border-0" style={{ backgroundColor: AGENT_CONFIG[name as Agent]?.color || '#6b7280' }}>{name}</span>
+                <span key={name} class="badge badge-xs text-white border-0" style={{ backgroundColor: agentConfig(name).color }}>{name}</span>
               ))}
             </>
           )}
