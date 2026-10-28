@@ -1,7 +1,8 @@
 # Flux - Kanban Board with MCP Server
 # Multi-stage build using Bun
 
-FROM oven/bun:1.3.5 AS base
+# Bun 1.4.4+ required: CVE-2026-111497 (Node2Shell, Brotli decoder OOB write) — 1.3.x is unpatched.
+FROM oven/bun:1.4.4 AS base
 WORKDIR /app
 
 # ============ Build Stage ============
@@ -20,7 +21,7 @@ COPY . .
 RUN bun install && bun run build
 
 # ============ Production Stage ============
-FROM oven/bun:1.3.5-slim AS runner
+FROM oven/bun:1.4.4-slim AS runner
 
 WORKDIR /app
 
